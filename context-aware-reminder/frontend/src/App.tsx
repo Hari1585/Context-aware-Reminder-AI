@@ -7,6 +7,7 @@ import Tasks from './pages/Tasks';
 import Search from './pages/Search';
 import CalendarPage from './pages/CalendarPage';
 import GmailSyncPage from './pages/GmailSyncPage';
+import Settings from './pages/Settings';
 
 function App() {
   return (
@@ -19,6 +20,7 @@ function App() {
           <Route path="/search" element={<Search />} />
           <Route path="/calendar" element={<CalendarPage />} />
           <Route path="/gmail" element={<GmailSyncPage />} />
+          <Route path="/settings" element={<Settings />} />
         </Routes>
       </Layout>
     </Router>

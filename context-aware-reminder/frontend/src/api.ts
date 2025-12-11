@@ -17,6 +17,9 @@ export interface Task {
   original_deadline?: string | null;
   // New fields for email source
   source_email_id?: string;
+  // New fields for history
+  completed_at?: string;
+  cost?: number; // For purchase analytics
 }
 
 export interface CalendarEvent {
@@ -53,6 +56,21 @@ export interface GraphStats {
     media_count: number;
 }
 
+export interface UserProfile {
+    id: string;
+    name: string;
+    email: string;
+    role: string;
+    avatar: string;
+    household_members: {name: string, relation: string}[];
+}
+
+export interface AnalyticsData {
+    monthly_spending: { name: string; value: number }[];
+    task_completion_trend: { name: string; completed: number; pending: number }[];
+    top_expenses: { category: string; amount: number }[];
+}
+
 // Mock Data for Fallback
 const MOCK_TASKS: Task[] = [
   {
@@ -73,7 +91,8 @@ const MOCK_TASKS: Task[] = [
     deadline: '2025-12-10T14:00:00',
     location_name: 'CVS Pharmacy, Oak St',
     priority: 'medium',
-    type: 'location_based'
+    type: 'location_based',
+    cost: 15.50
   },
   {
     id: '3',
@@ -83,7 +102,8 @@ const MOCK_TASKS: Task[] = [
     deadline: '2025-12-12T09:00:00',
     location_name: null,
     priority: 'medium',
-    type: 'time_based'
+    type: 'time_based',
+    cost: 124.50
   },
   {
     id: '4',
@@ -96,6 +116,82 @@ const MOCK_TASKS: Task[] = [
     type: 'recurring'
   }
 ];
+
+const MOCK_COMPLETED_TASKS: Task[] = [
+    {
+        id: '101',
+        title: 'Grocery Run',
+        description: 'Milk, Eggs, Bread',
+        summary: 'Buy Groceries',
+        deadline: '2025-12-01T10:00:00',
+        location_name: 'Whole Foods',
+        priority: 'medium',
+        type: 'location_based',
+        completed_at: '2025-12-01T11:30:00',
+        cost: 89.40
+    },
+    {
+        id: '102',
+        title: 'Car Service',
+        description: 'Oil change',
+        summary: 'Car Service',
+        deadline: '2025-11-28T09:00:00',
+        location_name: 'Jiffy Lube',
+        priority: 'high',
+        type: 'time_based',
+        completed_at: '2025-11-28T10:15:00',
+        cost: 65.00
+    },
+    {
+        id: '103',
+        title: 'Netflix Subscription',
+        description: 'Monthly renewal',
+        summary: 'Pay Netflix',
+        deadline: '2025-11-25T00:00:00',
+        location_name: null,
+        priority: 'low',
+        type: 'recurring',
+        completed_at: '2025-11-25T09:00:00',
+        cost: 19.99
+    }
+];
+
+const MOCK_ANALYTICS: AnalyticsData = {
+    monthly_spending: [
+        { name: 'Aug', value: 450 },
+        { name: 'Sep', value: 520 },
+        { name: 'Oct', value: 480 },
+        { name: 'Nov', value: 610 },
+        { name: 'Dec', value: 390 },
+    ],
+    task_completion_trend: [
+        { name: 'Mon', completed: 4, pending: 2 },
+        { name: 'Tue', completed: 3, pending: 4 },
+        { name: 'Wed', completed: 6, pending: 1 },
+        { name: 'Thu', completed: 2, pending: 3 },
+        { name: 'Fri', completed: 5, pending: 0 },
+        { name: 'Sat', completed: 8, pending: 0 },
+        { name: 'Sun', completed: 1, pending: 5 },
+    ],
+    top_expenses: [
+        { category: 'Groceries', amount: 320 },
+        { category: 'Utilities', amount: 150 },
+        { category: 'Transport', amount: 80 },
+        { category: 'Entertainment', amount: 45 },
+    ]
+};
+
+const MOCK_USER: UserProfile = {
+    id: 'user123',
+    name: 'John Doe',
+    email: 'john.doe@example.com',
+    role: 'Admin',
+    avatar: 'JD',
+    household_members: [
+        { name: 'Jane Doe', relation: 'Spouse' },
+        { name: 'Timmy Doe', relation: 'Child' }
+    ]
+};
 
 const MOCK_CALENDAR_EVENTS: CalendarEvent[] = [
     {
@@ -174,7 +270,7 @@ async function fetchWithFallback<T>(fn: () => Promise<any>, fallback: T): Promis
         const res = await fn();
         return res.data;
     } catch (error) {
-        console.warn('Backend connection failed, using mock data.', error);
+        // console.warn('Backend connection failed, using mock data.', error);
         return fallback;
     }
 }
@@ -192,6 +288,21 @@ export const api = {
             (priority === 'all' || t.priority === priority)
         )
     );
+  },
+
+  getCompletedTasks: async (userId: string) => {
+      await new Promise(r => setTimeout(r, 400));
+      return fetchWithFallback(() => axios.get(`${API_BASE}/tasks/completed`), MOCK_COMPLETED_TASKS);
+  },
+
+  getAnalytics: async (userId: string) => {
+      await new Promise(r => setTimeout(r, 600));
+      return fetchWithFallback(() => axios.get(`${API_BASE}/analytics`), MOCK_ANALYTICS);
+  },
+
+  getUserProfile: async (userId: string) => {
+      await new Promise(r => setTimeout(r, 300));
+      return fetchWithFallback(() => axios.get(`${API_BASE}/user`), MOCK_USER);
   },
 
   getCalendarEvents: async (userId: string) => {
