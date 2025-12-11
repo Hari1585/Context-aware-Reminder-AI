@@ -1,0 +1,5 @@
+{
+  "name": "Context-Aware Reminder App",
+  "description": "A full-stack application for capturing multi-modal notes, extracting actionable tasks using AI, and storing them in a Graph and Vector database for context-aware retrieval.",
+  "requestFramePermissions": []
+}
