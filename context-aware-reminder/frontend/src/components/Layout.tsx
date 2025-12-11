@@ -1,15 +1,16 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, FileText, ListTodo, Calendar, Settings, Bell } from 'lucide-react';
+import { LayoutDashboard, FileText, ListTodo, Calendar, Settings, Bell, Mail } from 'lucide-react';
 
 const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const location = useLocation();
 
   const navItems = [
     { path: '/', label: 'Dashboard', icon: LayoutDashboard },
-    { path: '/new', label: 'Notes', icon: FileText }, // Mapped '/new' to 'Notes' for visual match, though logically /new is 'New Note'
+    { path: '/new', label: 'Notes', icon: FileText },
     { path: '/tasks', label: 'Tasks', icon: ListTodo },
     { path: '/calendar', label: 'Calendar', icon: Calendar },
+    { path: '/gmail', label: 'Gmail Sync', icon: Mail },
     { path: '/settings', label: 'Settings', icon: Settings },
   ];
 
@@ -66,7 +67,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
       {/* Main Content */}
       <main className="flex-1 overflow-y-auto">
-        {/* Top Header Placeholder (Mobile toggle etc could go here) */}
+        {/* Top Header Placeholder */}
         <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-8 sticky top-0 z-10">
             <div className="flex items-center text-slate-400 hover:text-slate-600 cursor-pointer">
                 {/* Panel toggle icon placeholder */}

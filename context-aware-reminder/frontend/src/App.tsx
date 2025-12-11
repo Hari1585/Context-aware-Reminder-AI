@@ -5,6 +5,8 @@ import Dashboard from './pages/Dashboard';
 import NewNote from './pages/NewNote';
 import Tasks from './pages/Tasks';
 import Search from './pages/Search';
+import CalendarPage from './pages/CalendarPage';
+import GmailSyncPage from './pages/GmailSyncPage';
 
 function App() {
   return (
@@ -15,6 +17,8 @@ function App() {
           <Route path="/new" element={<NewNote />} />
           <Route path="/tasks" element={<Tasks />} />
           <Route path="/search" element={<Search />} />
+          <Route path="/calendar" element={<CalendarPage />} />
+          <Route path="/gmail" element={<GmailSyncPage />} />
         </Routes>
       </Layout>
     </Router>

@@ -11,6 +11,30 @@ export interface Task {
   location_name: string | null;
   priority: 'low' | 'medium' | 'high';
   type: 'time_based' | 'location_based' | 'recurring';
+  // New fields for optimization
+  is_rescheduled?: boolean;
+  reschedule_reason?: string;
+  original_deadline?: string | null;
+  // New fields for email source
+  source_email_id?: string;
+}
+
+export interface CalendarEvent {
+  id: string;
+  summary: string;
+  start: string;
+  end: string;
+  location: string | null;
+  type: 'work' | 'trip' | 'personal';
+}
+
+export interface Email {
+    id: string;
+    from: string;
+    subject: string;
+    snippet: string;
+    date: string;
+    is_processed: boolean;
 }
 
 export interface SearchResult {
@@ -36,7 +60,7 @@ const MOCK_TASKS: Task[] = [
     title: 'Return Amazon package',
     description: 'Return the package to UPS.',
     summary: 'Return Amazon package',
-    deadline: '2025-12-09T10:00:00',
+    deadline: '2025-12-09T17:00:00', // Originally 5 PM
     location_name: 'UPS Store, Main St',
     priority: 'high',
     type: 'location_based'
@@ -71,6 +95,52 @@ const MOCK_TASKS: Task[] = [
     priority: 'low',
     type: 'recurring'
   }
+];
+
+const MOCK_CALENDAR_EVENTS: CalendarEvent[] = [
+    {
+        id: 'evt1',
+        summary: 'Client Meeting at TechPark',
+        start: '2025-12-09T13:00:00',
+        end: '2025-12-09T14:30:00',
+        location: 'TechPark, Main St', // Near UPS Store (Task 1)
+        type: 'work'
+    },
+    {
+        id: 'evt2',
+        summary: 'Business Trip to NYC',
+        start: '2025-12-15T08:00:00',
+        end: '2025-12-17T18:00:00',
+        location: 'New York, NY',
+        type: 'trip'
+    }
+];
+
+const MOCK_EMAILS: Email[] = [
+    {
+        id: 'email1',
+        from: 'billing@electric-company.com',
+        subject: 'Your Electricity Bill is Ready',
+        snippet: 'Dear Customer, your bill for November is $124.50. Please pay by Dec 12 to avoid late fees.',
+        date: '2025-12-08T09:15:00',
+        is_processed: false
+    },
+    {
+        id: 'email2',
+        from: 'noreply@airlines.com',
+        subject: 'Flight Confirmation: SFO to JFK',
+        snippet: 'Your flight UA452 departs on Dec 15 at 8:00 AM. Please arrive at the airport 2 hours early.',
+        date: '2025-12-07T14:30:00',
+        is_processed: false
+    },
+    {
+        id: 'email3',
+        from: 'newsletter@tech-weekly.com',
+        subject: 'Top Tech News This Week',
+        snippet: 'Here are the top stories: AI takes over task management...',
+        date: '2025-12-08T10:00:00',
+        is_processed: true // Already handled or ignored
+    }
 ];
 
 const MOCK_STATS: GraphStats = {
@@ -124,8 +194,76 @@ export const api = {
     );
   },
 
+  getCalendarEvents: async (userId: string) => {
+      // Simulate API call
+      await new Promise(r => setTimeout(r, 800));
+      return fetchWithFallback(
+          () => axios.get<CalendarEvent[]>(`${API_BASE}/calendar`),
+          MOCK_CALENDAR_EVENTS
+      );
+  },
+  
+  getEmails: async (userId: string) => {
+      await new Promise(r => setTimeout(r, 600));
+      return fetchWithFallback(
+          () => axios.get<Email[]>(`${API_BASE}/gmail`),
+          MOCK_EMAILS
+      );
+  },
+
+  syncGmailTasks: async (userId: string) => {
+      await new Promise(r => setTimeout(r, 2500)); // Simulate AI processing
+      
+      // Simulate extraction from emails
+      const extractedTasks: Task[] = [
+          {
+            id: 'task-email-1',
+            title: 'Pay Electricity Bill',
+            description: 'Bill amount $124.50 due by Dec 12.',
+            summary: 'Pay electricity bill',
+            deadline: '2025-12-12T17:00:00',
+            location_name: null,
+            priority: 'high',
+            type: 'time_based',
+            source_email_id: 'email1'
+          },
+          {
+            id: 'task-email-2',
+            title: 'Check-in for Flight UA452',
+            description: 'Flight to NYC departs Dec 15 at 8:00 AM.',
+            summary: 'Flight check-in',
+            deadline: '2025-12-14T08:00:00', // 24h before
+            location_name: 'SFO Airport',
+            priority: 'high',
+            type: 'location_based',
+            source_email_id: 'email2'
+          }
+      ];
+      return extractedTasks;
+  },
+
+  // The AI Agent simulation
+  optimizeSchedule: async (userId: string) => {
+      await new Promise(r => setTimeout(r, 2000)); // Simulate processing time
+      
+      // Logic: Task 1 is at "UPS Store, Main St". Event 1 is at "TechPark, Main St".
+      // The AI detects "Main St" proximity and moves Task 1 to after the meeting.
+      
+      const optimizedTasks = [...MOCK_TASKS];
+      
+      // Modify Task 1
+      optimizedTasks[0] = {
+          ...optimizedTasks[0],
+          is_rescheduled: true,
+          original_deadline: optimizedTasks[0].deadline,
+          deadline: '2025-12-09T14:45:00', // 15 mins after meeting ends
+          reschedule_reason: "Detected you are at 'Main St' for 'Client Meeting'. Rescheduled to save travel time."
+      };
+
+      return optimizedTasks;
+  },
+
   search: async (query: string) => {
-    // Artificial delay for realism
     await new Promise(r => setTimeout(r, 600));
     return fetchWithFallback(
         () => axios.post<SearchResult[]>(`${API_BASE}/search/semantic`, { query, top_k: 5 }),
