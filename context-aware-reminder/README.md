@@ -9,7 +9,38 @@ A full-stack application that transforms multi-modal notes (text, image, audio, 
 - **Database:** Neo4j (Graph), ChromaDB (Vector)
 - **Processing:** ffmpeg (Video/Audio)
 
-## 🚀 Setup & Run
+## 🐳 Deployment (Docker)
+
+The easiest way to run the full application (Frontend + Backend + Database) is using Docker Compose.
+
+### Prerequisites
+- Docker and Docker Compose installed on your machine.
+
+### Run Instructions
+
+1. Navigate to the project folder:
+   ```bash
+   cd context-aware-reminder
+   ```
+
+2. Start the services:
+   ```bash
+   docker-compose up --build
+   ```
+
+3. Access the application:
+   - **Frontend (App):** [http://localhost](http://localhost)
+   - **Backend API Docs:** [http://localhost:8000/docs](http://localhost:8000/docs)
+   - **Neo4j Browser:** [http://localhost:7474](http://localhost:7474) (Auth: `neo4j`/`password`)
+
+4. To stop the application:
+   ```bash
+   docker-compose down
+   ```
+
+## 🚀 Local Development Setup
+
+If you prefer running services individually for development:
 
 ### 1. Backend Setup
 
@@ -64,7 +95,7 @@ A full-stack application that transforms multi-modal notes (text, image, audio, 
 
 ## 🧪 Demo Flow
 
-1. **Dashboard**: Open `http://localhost:5173/`. You'll see system stats.
+1. **Dashboard**: Open the app. You'll see system stats.
 2. **Create Note**: Go to `/new`.
    - Select **Text** tab.
    - Enter: "I need to return my Amazon package when I go near UPS and pick up medicines from CVS tonight at 8."
@@ -76,6 +107,9 @@ A full-stack application that transforms multi-modal notes (text, image, audio, 
 4. **Search**: Go to `/search`.
    - Type "pharmacy" or "amazon".
    - The system uses Vector Search to find the relevant content even if exact keywords differ slightly (simulated embeddings).
+5. **Context Check**:
+   - On Dashboard, toggle location to "Driving" then back to "Home".
+   - If it's a trash day, you will be reminded. If you have an incomplete grocery task, the app will suggest delivery options.
 
 ## ⚠️ Notes
 

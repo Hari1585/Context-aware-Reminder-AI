@@ -25,7 +25,8 @@ import {
   CloudRain,
   Navigation,
   CalendarDays,
-  Truck
+  Truck,
+  Filter
 } from 'lucide-react';
 
 // Mock data to match the image
@@ -88,8 +89,11 @@ const MOCK_TASKS_DATA = [
   }
 ];
 
+type FilterType = 'all' | 'today' | 'high' | 'location';
+
 const Dashboard: React.FC = () => {
   const [showToast, setShowToast] = useState(true);
+  const [activeFilter, setActiveFilter] = useState<FilterType>('all');
   
   // Voice & Quick Note State
   const [quickNote, setQuickNote] = useState('');
@@ -311,6 +315,18 @@ const Dashboard: React.FC = () => {
     }
   };
 
+  // Filter Tasks based on selection
+  const filteredTasks = MOCK_TASKS_DATA.filter(task => {
+    if (activeFilter === 'today') return task.date === 'Dec 9, 2025';
+    if (activeFilter === 'high') return task.priority === 'high';
+    if (activeFilter === 'location') return task.location && !task.location.includes('Home');
+    return true;
+  });
+
+  const toggleFilter = (filter: FilterType) => {
+    setActiveFilter(prev => prev === filter ? 'all' : filter);
+  };
+
   return (
     <div className="space-y-8 relative">
       
@@ -379,43 +395,70 @@ const Dashboard: React.FC = () => {
       {/* Header */}
       <div>
         <h2 className="text-3xl font-bold text-slate-900">Dashboard</h2>
-        <p className="text-slate-500 mt-1">Welcome back! Here's your overview.</p>
+        <p className="text-slate-500 mt-1">Welcome back! Click the cards below to filter your tasks.</p>
       </div>
 
-      {/* Stats Cards */}
+      {/* Stats Cards - Interactive */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* Card 1 */}
-        <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+        {/* Card 1: Due Today */}
+        <div 
+          onClick={() => toggleFilter('today')}
+          className={`cursor-pointer p-6 rounded-xl border transition-all flex items-center justify-between group ${
+            activeFilter === 'today' 
+            ? 'bg-blue-50 border-blue-400 ring-2 ring-blue-200' 
+            : 'bg-white border-slate-200 hover:border-blue-300 hover:shadow-md'
+          }`}
+        >
           <div>
-            <p className="text-slate-500 text-sm font-medium">Tasks Due Today</p>
-            <p className="text-4xl font-bold text-slate-900 mt-2">5</p>
-            <p className="text-slate-400 text-xs mt-1">3 high priority</p>
+            <p className={`text-sm font-medium ${activeFilter === 'today' ? 'text-blue-700' : 'text-slate-500'}`}>Tasks Due Today</p>
+            <p className="text-4xl font-bold text-slate-900 mt-2">3</p>
+            <p className="text-slate-400 text-xs mt-1 group-hover:text-blue-500 transition-colors">Click to view</p>
           </div>
-          <div className="w-12 h-12 bg-blue-50 rounded-lg flex items-center justify-center text-blue-600">
+          <div className={`w-12 h-12 rounded-lg flex items-center justify-center transition-colors ${
+            activeFilter === 'today' ? 'bg-blue-200 text-blue-700' : 'bg-blue-50 text-blue-600'
+          }`}>
             <CheckSquare className="w-6 h-6" />
           </div>
         </div>
 
-        {/* Card 2 */}
-        <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+        {/* Card 2: High Priority */}
+        <div 
+          onClick={() => toggleFilter('high')}
+          className={`cursor-pointer p-6 rounded-xl border transition-all flex items-center justify-between group ${
+            activeFilter === 'high' 
+            ? 'bg-orange-50 border-orange-400 ring-2 ring-orange-200' 
+            : 'bg-white border-slate-200 hover:border-orange-300 hover:shadow-md'
+          }`}
+        >
           <div>
-            <p className="text-slate-500 text-sm font-medium">Overdue Tasks</p>
-            <p className="text-4xl font-bold text-slate-900 mt-2">2</p>
-            <p className="text-slate-400 text-xs mt-1">Needs attention</p>
+            <p className={`text-sm font-medium ${activeFilter === 'high' ? 'text-orange-700' : 'text-slate-500'}`}>High Priority Tasks</p>
+            <p className="text-4xl font-bold text-slate-900 mt-2">1</p>
+            <p className="text-slate-400 text-xs mt-1 group-hover:text-orange-500 transition-colors">Needs attention</p>
           </div>
-          <div className="w-12 h-12 bg-orange-50 rounded-lg flex items-center justify-center text-orange-500">
+          <div className={`w-12 h-12 rounded-lg flex items-center justify-center transition-colors ${
+            activeFilter === 'high' ? 'bg-orange-200 text-orange-700' : 'bg-orange-50 text-orange-500'
+          }`}>
             <AlertTriangle className="w-6 h-6" />
           </div>
         </div>
 
-        {/* Card 3 */}
-        <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+        {/* Card 3: Location Based */}
+        <div 
+          onClick={() => toggleFilter('location')}
+          className={`cursor-pointer p-6 rounded-xl border transition-all flex items-center justify-between group ${
+            activeFilter === 'location' 
+            ? 'bg-green-50 border-green-400 ring-2 ring-green-200' 
+            : 'bg-white border-slate-200 hover:border-green-300 hover:shadow-md'
+          }`}
+        >
           <div>
-            <p className="text-slate-500 text-sm font-medium">Tasks with Locations</p>
-            <p className="text-4xl font-bold text-slate-900 mt-2">8</p>
-            <p className="text-slate-400 text-xs mt-1">Location reminders active</p>
+            <p className={`text-sm font-medium ${activeFilter === 'location' ? 'text-green-700' : 'text-slate-500'}`}>Tasks with Locations</p>
+            <p className="text-4xl font-bold text-slate-900 mt-2">3</p>
+            <p className="text-slate-400 text-xs mt-1 group-hover:text-green-500 transition-colors">Location active</p>
           </div>
-          <div className="w-12 h-12 bg-green-50 rounded-lg flex items-center justify-center text-green-600">
+          <div className={`w-12 h-12 rounded-lg flex items-center justify-center transition-colors ${
+            activeFilter === 'location' ? 'bg-green-200 text-green-700' : 'bg-green-50 text-green-600'
+          }`}>
             <MapPin className="w-6 h-6" />
           </div>
         </div>
@@ -493,49 +536,72 @@ const Dashboard: React.FC = () => {
              </div>
           </div>
 
-          <h3 className="text-xl font-bold text-slate-900 flex items-center gap-2 mt-6">
-            <MapPin className="w-5 h-5" /> Upcoming Location Tasks
-          </h3>
+          <div className="flex items-center justify-between mt-6">
+            <h3 className="text-xl font-bold text-slate-900 flex items-center gap-2">
+                {activeFilter === 'location' && <MapPin className="w-5 h-5" />}
+                {activeFilter === 'high' && <AlertTriangle className="w-5 h-5" />}
+                {activeFilter === 'today' && <CalendarDays className="w-5 h-5" />}
+                {activeFilter === 'all' && <CheckSquare className="w-5 h-5" />}
+                {activeFilter === 'all' ? 'Upcoming Tasks' : 
+                 activeFilter === 'today' ? 'Tasks Due Today' :
+                 activeFilter === 'high' ? 'High Priority Tasks' : 'Location Tasks'}
+            </h3>
+            {activeFilter !== 'all' && (
+                <button 
+                    onClick={() => setActiveFilter('all')}
+                    className="text-xs font-bold text-blue-600 hover:text-blue-800 flex items-center gap-1"
+                >
+                    <X className="w-3 h-3" /> Clear Filter
+                </button>
+            )}
+          </div>
 
-          <div className="space-y-3">
-            {MOCK_TASKS_DATA.map(task => (
-              <div key={task.id} className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-                <div className="flex items-start gap-3">
-                  <div className="pt-1">
-                    <input type="checkbox" className="w-5 h-5 rounded border-slate-300 text-blue-600 focus:ring-blue-500" />
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium text-slate-900">{task.title}</span>
-                        <span className={`text-[10px] px-1.5 py-0.5 rounded font-bold uppercase tracking-wider ${
-                          task.priority === 'high' ? 'bg-red-100 text-red-600' : 
-                          task.priority === 'medium' ? 'bg-yellow-100 text-yellow-600' : 
-                          'bg-green-100 text-green-600'
-                        }`}>
-                          {task.priority}
-                        </span>
-                      </div>
-                      <div className="flex gap-2 text-slate-400">
-                        <Edit2 className="w-4 h-4 cursor-pointer hover:text-slate-600" />
-                        <Trash2 className="w-4 h-4 cursor-pointer hover:text-red-500" />
-                      </div>
-                    </div>
-                    
-                    <div className="mt-2 flex items-center gap-4 text-xs text-slate-500">
-                      <div className="flex items-center gap-1">
-                        <CalendarDays className="w-3.5 h-3.5" />
-                        {task.date}
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <MapPin className="w-3.5 h-3.5" />
-                        {task.location}
-                      </div>
-                    </div>
-                  </div>
+          <div className="space-y-3 min-h-[300px]">
+            {filteredTasks.length === 0 ? (
+                <div className="flex flex-col items-center justify-center h-48 bg-slate-50 rounded-xl border border-dashed border-slate-300 text-slate-500">
+                    <Filter className="w-8 h-8 mb-2 opacity-50" />
+                    <p>No tasks match this filter</p>
                 </div>
-              </div>
-            ))}
+            ) : (
+                filteredTasks.map(task => (
+                <div key={task.id} className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm animate-in fade-in slide-in-from-right-2 duration-300">
+                    <div className="flex items-start gap-3">
+                    <div className="pt-1">
+                        <input type="checkbox" className="w-5 h-5 rounded border-slate-300 text-blue-600 focus:ring-blue-500" />
+                    </div>
+                    <div className="flex-1">
+                        <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                            <span className="font-medium text-slate-900">{task.title}</span>
+                            <span className={`text-[10px] px-1.5 py-0.5 rounded font-bold uppercase tracking-wider ${
+                            task.priority === 'high' ? 'bg-red-100 text-red-600' : 
+                            task.priority === 'medium' ? 'bg-yellow-100 text-yellow-600' : 
+                            'bg-green-100 text-green-600'
+                            }`}>
+                            {task.priority}
+                            </span>
+                        </div>
+                        <div className="flex gap-2 text-slate-400">
+                            <Edit2 className="w-4 h-4 cursor-pointer hover:text-slate-600" />
+                            <Trash2 className="w-4 h-4 cursor-pointer hover:text-red-500" />
+                        </div>
+                        </div>
+                        
+                        <div className="mt-2 flex items-center gap-4 text-xs text-slate-500">
+                        <div className="flex items-center gap-1">
+                            <CalendarDays className="w-3.5 h-3.5" />
+                            {task.date}
+                        </div>
+                        <div className="flex items-center gap-1">
+                            <MapPin className="w-3.5 h-3.5" />
+                            {task.location}
+                        </div>
+                        </div>
+                    </div>
+                    </div>
+                </div>
+                ))
+            )}
           </div>
         </div>
       </div>
