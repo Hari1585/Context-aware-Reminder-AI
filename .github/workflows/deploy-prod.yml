@@ -1,0 +1,128 @@
+name: Deploy Production
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  AWS_REGION: us-east-1
+  ENV: prod
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      
+      - name: Install backend dependencies
+        working-directory: backend
+        run: |
+          pip install -r requirements.txt
+      
+      - name: Run backend tests
+        working-directory: backend
+        run: |
+          pytest tests/ -v --cov=src --cov-report=term
+
+  deploy-infra:
+    needs: test
+    runs-on: ubuntu-latest
+    environment: production
+    outputs:
+      api-url: ${{ steps.outputs.outputs.api-url }}
+      user-pool-id: ${{ steps.outputs.outputs.user-pool-id }}
+      user-pool-client-id: ${{ steps.outputs.outputs.user-pool-client-id }}
+      cognito-domain: ${{ steps.outputs.outputs.cognito-domain }}
+      frontend-bucket: ${{ steps.outputs.outputs.frontend-bucket }}
+      distribution-id: ${{ steps.outputs.outputs.distribution-id }}
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN_PROD }}
+          aws-region: ${{ env.AWS_REGION }}
+      
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      
+      - name: Install CDK dependencies
+        working-directory: infra
+        run: npm install
+      
+      - name: CDK Deploy
+        working-directory: infra
+        run: |
+          npx cdk deploy --all --context env=${{ env.ENV }} --require-approval broadening
+      
+      - name: Get Stack Outputs
+        id: outputs
+        run: |
+          API_URL=$(aws cloudformation describe-stacks --stack-name reminder-app-${{ env.ENV }}-api --query 'Stacks[0].Outputs[?OutputKey==`ApiUrl`].OutputValue' --output text)
+          USER_POOL_ID=$(aws cloudformation describe-stacks --stack-name reminder-app-${{ env.ENV }}-auth --query 'Stacks[0].Outputs[?OutputKey==`UserPoolId`].OutputValue' --output text)
+          USER_POOL_CLIENT_ID=$(aws cloudformation describe-stacks --stack-name reminder-app-${{ env.ENV }}-auth --query 'Stacks[0].Outputs[?OutputKey==`UserPoolClientId`].OutputValue' --output text)
+          COGNITO_DOMAIN=$(aws cloudformation describe-stacks --stack-name reminder-app-${{ env.ENV }}-auth --query 'Stacks[0].Outputs[?OutputKey==`CognitoDomain`].OutputValue' --output text)
+          FRONTEND_BUCKET=$(aws cloudformation describe-stacks --stack-name reminder-app-${{ env.ENV }}-frontend --query 'Stacks[0].Outputs[?OutputKey==`FrontendBucketName`].OutputValue' --output text)
+          DISTRIBUTION_ID=$(aws cloudformation describe-stacks --stack-name reminder-app-${{ env.ENV }}-frontend --query 'Stacks[0].Outputs[?OutputKey==`DistributionId`].OutputValue' --output text)
+          
+          echo "api-url=$API_URL" >> $GITHUB_OUTPUT
+          echo "user-pool-id=$USER_POOL_ID" >> $GITHUB_OUTPUT
+          echo "user-pool-client-id=$USER_POOL_CLIENT_ID" >> $GITHUB_OUTPUT
+          echo "cognito-domain=$COGNITO_DOMAIN" >> $GITHUB_OUTPUT
+          echo "frontend-bucket=$FRONTEND_BUCKET" >> $GITHUB_OUTPUT
+          echo "distribution-id=$DISTRIBUTION_ID" >> $GITHUB_OUTPUT
+
+  deploy-frontend:
+    needs: deploy-infra
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN_PROD }}
+          aws-region: ${{ env.AWS_REGION }}
+      
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm install
+      
+      - name: Build frontend
+        working-directory: frontend
+        env:
+          NEXT_PUBLIC_API_URL: ${{ needs.deploy-infra.outputs.api-url }}
+          NEXT_PUBLIC_USER_POOL_ID: ${{ needs.deploy-infra.outputs.user-pool-id }}
+          NEXT_PUBLIC_USER_POOL_CLIENT_ID: ${{ needs.deploy-infra.outputs.user-pool-client-id }}
+          NEXT_PUBLIC_COGNITO_DOMAIN: ${{ needs.deploy-infra.outputs.cognito-domain }}
+          NEXT_PUBLIC_REGION: ${{ env.AWS_REGION }}
+        run: npm run build
+      
+      - name: Upload to S3
+        working-directory: frontend
+        run: |
+          aws s3 sync out/ s3://${{ needs.deploy-infra.outputs.frontend-bucket }}/ --delete
+      
+      - name: Invalidate CloudFront
+        run: |
+          aws cloudfront create-invalidation --distribution-id ${{ needs.deploy-infra.outputs.distribution-id }} --paths "/*"
